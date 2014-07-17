@@ -549,7 +549,9 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 		curr_policy->user_policy.governor = curr_policy->governor;
 		
 		sysfs_notify(&curr_policy->kobj, NULL, "scaling_governor");
-		
+
+		kobject_uevent(cpufreq_global_kobject, KOBJ_ADD);
+
 		if (!ret)
 			pr_info("store_scaling_governor setting governor %s on cpu %d ok\n", str_governor, cpu);
 
