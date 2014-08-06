@@ -36,6 +36,9 @@
 #include <mach/board.h>
 #include <mach/gpiomux.h>
 #include <mach/msm_iomap.h>
+#ifdef CONFIG_ION_MSM
+#include <mach/ion.h>
+#endif
 #include <mach/msm_memtypes.h>
 #include <mach/msm_smd.h>
 #include <mach/restart.h>
@@ -61,6 +64,27 @@
 #include "../../../../drivers/video/msm/mdss/mdss_fb.h"
 extern int update_preset_lcdc_lut(void);
 #endif
+
+static struct memtype_reserve msm8974_reserve_table[] __initdata = {
+	[MEMTYPE_SMI] = {
+	},
+	[MEMTYPE_EBI0] = {
+		.flags	=	MEMTYPE_FLAGS_1M_ALIGN,
+	},
+	[MEMTYPE_EBI1] = {
+		.flags	=	MEMTYPE_FLAGS_1M_ALIGN,
+	},
+};
+
+static int msm8974_paddr_to_memtype(phys_addr_t paddr)
+{
+	return MEMTYPE_EBI1;
+}
+
+static struct reserve_info msm8974_reserve_info __initdata = {
+	.memtype_reserve_table = msm8974_reserve_table,
+	.paddr_to_memtype = msm8974_paddr_to_memtype,
+};
 
 #ifdef CONFIG_RAMDUMP_TAGS
 static struct resource rdtags_resources[] = {
@@ -197,7 +221,9 @@ void __init msm_8974_reserve(void)
 #ifdef CONFIG_ANDROID_PERSISTENT_RAM
 	reserve_persistent_ram();
 #endif
-	of_scan_flat_dt(dt_scan_for_memory_reserve, NULL);
+	reserve_info = &msm8974_reserve_info;
+	of_scan_flat_dt(dt_scan_for_memory_reserve, msm8974_reserve_table);
+	msm_reserve();
 }
 
 #ifdef CONFIG_LCD_KCAL
@@ -248,7 +274,8 @@ void __init add_lcd_kcal_devices(void)
 
 static void __init msm8974_early_memory(void)
 {
-	of_scan_flat_dt(dt_scan_for_memory_hole, NULL);
+	reserve_info = &msm8974_reserve_info;
+	of_scan_flat_dt(dt_scan_for_memory_hole, msm8974_reserve_table);
 }
 
 void __init msm8974_add_devices(void)
